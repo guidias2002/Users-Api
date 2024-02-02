@@ -1,13 +1,15 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
+import AuthService from 'App/Service/AuthService';
+
 import User from 'App/Models/User'
 
 export default class UsersController {
 
   public async firstUser({ request, response }: HttpContextContract) {
-    const users = await User.all();
+    const users = await User.findBy('access', true);
 
-    if (users.length !== 0) {
+    if (users) {
       throw new Error("Já existe usuário criado")
     }
 
@@ -23,11 +25,7 @@ export default class UsersController {
   }
 
   public async store({ request, response, auth }: HttpContextContract) {
-    const userAuth = auth.user
-
-    if (!userAuth?.access) {
-      throw new Error("Você não tem permissão para essa funcionalidade")
-    }
+    await AuthService.authenticateAdmin({ auth });
 
     const body = request.body()
     const user = await User.create(body)
@@ -40,9 +38,10 @@ export default class UsersController {
     }
   }
 
-  public async index() {
+  public async index({ auth }) {
+    await AuthService.authenticate({ auth });
+    
     const users = await User.all()
-    console.log(users);
 
     return users;
   }
