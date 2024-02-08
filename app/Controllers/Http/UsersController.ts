@@ -1,6 +1,6 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
-import AuthService from 'App/Service/AuthService';
+import AuthService from 'App/Services/AuthService';
 
 import User from 'App/Models/User'
 
@@ -25,7 +25,7 @@ export default class UsersController {
   }
 
   public async store({ request, response, auth }: HttpContextContract) {
-    await AuthService.authenticateAdmin({ auth });
+    AuthService.authenticateAdmin(auth);
 
     const body = request.body()
     const user = await User.create(body)
@@ -39,20 +39,23 @@ export default class UsersController {
   }
 
   public async index({ auth }) {
-    await AuthService.authenticate({ auth });
-    
+    AuthService.authenticateAdmin(auth)
     const users = await User.all()
 
     return users;
   }
 
-  public async show({ params }: HttpContextContract) {
+  public async show({ params, auth }: HttpContextContract) {
+    AuthService.authenticate(Number(params.id), auth);
+
     const user = await User.findOrFail(params.id);
 
     return user;
   }
 
-  public async update({ request, params }: HttpContextContract) {
+  public async update({ request, params, auth }: HttpContextContract) {
+    AuthService.authenticateAdmin(auth);
+
     const body = request.body()
     const user = await User.findOrFail(params.id);
 
@@ -67,14 +70,18 @@ export default class UsersController {
     return user;
   }
 
-  public async destroy({ params }: HttpContextContract) {
+  public async destroy({ params, auth }: HttpContextContract) {
+    AuthService.authenticateAdmin(auth);
+
     const user = await User.findOrFail(params.id);
     user.delete();
 
     return 'Usuário deletado';
   }
 
-  public async deleteAll() {
+  public async deleteAll({ auth }) {
+    AuthService.authenticateAdmin(auth);
+
     const users = await User.all();
     users.forEach((user) => user.delete());
 
